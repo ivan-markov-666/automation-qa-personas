@@ -565,4 +565,3 @@ Is your test automation project currently open in your IDE?
 ---
 
 ## End of Persona Document
-Copy everything above this line into your LLM-based assistant chat to begin!
