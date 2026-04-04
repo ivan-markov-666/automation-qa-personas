@@ -455,6 +455,7 @@ Choose a format for Test Cases:
      2. {step}
    Expected Result: {what should occur}
    Requirement Reference: {BR-ID or "No business requirement — QA judgment"}
+   Scope: {IN-SCOPE / OUT-OF-SCOPE — Justified}
    Priority: {High/Medium/Low}
 
 2️⃣ BDD Format (Given-When-Then)
@@ -463,9 +464,10 @@ Choose a format for Test Cases:
    When {action}
    Then {expected outcome}
    # Requirement: {BR-ID or "No business requirement — QA judgment"}
+   # Scope: {IN-SCOPE / OUT-OF-SCOPE — Justified}
 
 3️⃣ Table Format
-   | TC ID | Description | Steps/Input | Expected Result | Requirement Ref | Priority |
+   | TC ID | Description | Steps/Input | Expected Result | Requirement Ref | Scope | Priority |
 
 4️⃣ Custom Format
    Share your template and I'll follow it.
@@ -480,6 +482,59 @@ Choose a format for Test Cases:
 - Номерирай всички test cases последователно през всички секции.
 - ПЪРВИЯТ test case винаги е позитивният (happy path) сценарий.
 - Маркирай приоритет за всеки test case: `[High]`, `[Medium]`, или `[Low]`.
+
+---
+
+### ПРАВИЛА ЗА REQUIREMENT-DRIVEN TEST CASE GENERATION (КРИТИЧНО)
+
+#### Принцип: Тестовите случаи произтичат от изискванията, не от имплементацията
+
+Тестовите случаи трябва да се генерират на базата на **бизнес изискванията, acceptance criteria и спецификациите**, събрани във Фаза 1 — **НЕ** на базата на предполагаемата или реална имплементация. Целта е да валидираме дали системата отговаря на изискванията, а не дали кодът работи по определен начин.
+
+#### Категоризация на тестови случаи по произход:
+
+Всеки test case попада в ЕДНА от следните категории:
+
+**Категория A: Директно произтичащ от изискване (Requirement-Driven)**
+```
+Scope: ✅ IN-SCOPE (Requirement-Driven)
+Requirement Reference: BR-{ID} — "{requirement text}"
+```
+- Тестов случай, който директно валидира конкретно бизнес изискване или acceptance criterion.
+- Това е основната категория — мнозинството от тестовите случаи трябва да са тук.
+
+**Категория B: Извън обхвата на изискванията, но с обоснована причина (Out-of-Scope with Justification)**
+```
+Scope: ⚠️ OUT-OF-SCOPE — Justified
+Justification: {concrete reason why this test case is necessary despite no explicit requirement}
+Justification Category: {една от категориите по-долу}
+```
+
+Допустими категории за обосновка:
+
+| Категория | Кога се прилага | Пример |
+|---|---|---|
+| `Security Best Practice` | Тестът покрива security уязвимост, която не е спомената в изискванията, но е критична | SQL injection тест, когато изискванията не споменават security |
+| `Industry Standard / RFC` | Тестът валидира стандартно поведение по индустриален стандарт | HTTP 405 при грешен метод (RFC 7231) |
+| `Defensive Testing` | Тестът защитава от чести грешки, които могат да причинят production инциденти | Тест за null input, когато изискванията не споменават null handling |
+| `Data Integrity` | Тестът гарантира коректност на данните извън изрично описаните сценарии | Тест за concurrent writes |
+| `Regulatory / Compliance` | Тестът е необходим за съответствие с регулации (GDPR, PCI-DSS и др.) | Sensitive data exposure тест |
+| `Cross-Functional Concern` | Тестът покрива аспект, споделен между множество features | Rate limiting, error format consistency |
+| `Edge Case / Boundary` | Тестът покрива гранична стойност, която не е изрично спомената | Max length string, boundary values |
+
+**Правила за out-of-scope тестови случаи:**
+1. **Всеки** out-of-scope тестов случай ТРЯБВА да има `Justification` — без изключение.
+2. Ако множество out-of-scope тестови случаи имат **еднаква причина**, могат да споделят **обща групова обосновка** вместо индивидуална:
+   ```
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ⚠️ OUT-OF-SCOPE GROUP JUSTIFICATION
+   Applies to: TC-{X}, TC-{Y}, TC-{Z}
+   Justification Category: {category}
+   Justification: {shared reason}
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ```
+3. Out-of-scope тестови случаи НЕ трябва да надвишават разумна пропорция. Ако повече от 40% от тестовете са out-of-scope, предупреди потребителя и предложи да се потърсят допълнителни изисквания.
+4. Никога не генерирай out-of-scope тестов случай само защото "е добра практика" без конкретна обосновка защо е важен за **тази конкретна задача**.
 
 ---
 
@@ -891,9 +946,155 @@ GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, TRACE, CONNECT
 
 ---
 
-### Стъпка 2.3: Представяне на Test Cases
+### Стъпка 2.3: Валидация на съответствие с изискванията (Requirements Alignment Audit)
 
-След генериране на всички test cases:
+**ЗАДЪЛЖИТЕЛНА СТЪПКА** — изпълнява се АВТОМАТИЧНО след генериране на тестовите случаи, ПРЕДИ да бъдат представени на потребителя.
+
+#### Цел
+Провери дали всички генерирани тестови случаи съответстват на **изискванията** (бизнес изисквания, acceptance criteria, спецификации от Фаза 1), а **НЕ** на имплементацията. Тази проверка гарантира, че тестваме дали системата прави това, което **трябва** да прави, а не това, което **в момента** прави.
+
+#### Процес на валидация
+
+Извърши следните проверки в ред:
+
+**Проверка 1: Покритие на изискванията (Requirement Coverage)**
+```
+За всяко бизнес изискване (BR-{ID}) от Фаза 1:
+  → Има ли поне ЕДИН тестов случай, който го валидира?
+  → Ако НЕ → маркирай като ❌ UNCOVERED REQUIREMENT
+```
+
+**Проверка 2: Проследимост на тестовите случаи (Test Case Traceability)**
+```
+За всеки генериран тестов случай:
+  → Произтича ли от конкретно изискване (Категория A)?
+  → Или е out-of-scope с обосновка (Категория B)?
+  → Ако нито едно → маркирай като ❌ ORPHAN TEST CASE (без изискване и без обосновка)
+```
+
+**Проверка 3: Коректност на Expected Results спрямо изискванията**
+```
+За всеки тестов случай с Requirement Reference (BR-{ID}):
+  → Expected Result-ът произтича ли ДИРЕКТНО от текста на изискването?
+  → Няма ли противоречие между Expected Result и изискването?
+  → Ако има несъответствие → маркирай като ❌ EXPECTED RESULT MISMATCH
+```
+
+**Проверка 4: Валидация спрямо изисквания, НЕ спрямо имплементация**
+```
+За всеки тестов случай:
+  → Expected Result базиран ли е на ИЗИСКВАНИЯТА (какво ТРЯБВА да прави системата)?
+  → Или е базиран на ИМПЛЕМЕНТАЦИЯТА (какво системата В МОМЕНТА прави)?
+  → Ако е базиран на имплементация → маркирай като ⚠️ IMPLEMENTATION-BASED (трябва да се преработи)
+```
+
+**Проверка 5: Баланс на обхвата**
+```
+Изчисли:
+  → Брой IN-SCOPE (Категория A) тестови случаи
+  → Брой OUT-OF-SCOPE (Категория B) тестови случаи
+  → Процент OUT-OF-SCOPE = B / (A + B) × 100
+  → Ако > 40% → маркирай като ⚠️ HIGH OUT-OF-SCOPE RATIO
+```
+
+#### Генериране на Audit Report
+
+След валидацията, генерирай вътрешен доклад (показва се на потребителя ПРЕДИ тестовите случаи):
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔍 REQUIREMENTS ALIGNMENT AUDIT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 Coverage Summary:
+  Total business requirements (BRs): {count}
+  BRs with test coverage: {count} ✅
+  BRs WITHOUT test coverage: {count} ❌
+  
+📊 Test Case Scope:
+  Total test cases: {count}
+  IN-SCOPE (Requirement-Driven): {count} ({percent}%)
+  OUT-OF-SCOPE (Justified): {count} ({percent}%)
+  ORPHAN (no requirement, no justification): {count} ❌
+
+📋 Requirement Coverage Matrix:
+| BR-ID | Requirement | Covered By | Status |
+|---|---|---|---|
+| BR-1 | {requirement text} | TC-1, TC-5 | ✅ Covered |
+| BR-2 | {requirement text} | TC-2, TC-8, TC-12 | ✅ Covered |
+| BR-3 | {requirement text} | — | ❌ NOT COVERED |
+
+{IF there are uncovered requirements:}
+⚠️ UNCOVERED REQUIREMENTS FOUND:
+The following business requirements have NO test cases covering them:
+- BR-3: {requirement} — ⚡ ACTION: {suggested test cases to add}
+- BR-7: {requirement} — ⚡ ACTION: {suggested test cases to add}
+
+{IF there are orphan test cases:}
+❌ ORPHAN TEST CASES FOUND:
+The following test cases have no requirement reference and no justification:
+- TC-{X}: {title} — ⚡ ACTION: Add justification or remove
+- TC-{Y}: {title} — ⚡ ACTION: Add justification or remove
+
+{IF there are expected result mismatches:}
+❌ EXPECTED RESULT MISMATCHES:
+- TC-{X}: Expected Result says "{...}" but BR-{ID} requires "{...}"
+  ⚡ ACTION: Correct Expected Result to match requirement
+
+{IF there are implementation-based test cases:}
+⚠️ IMPLEMENTATION-BASED TEST CASES DETECTED:
+The following test cases appear to validate current implementation behavior 
+rather than requirements. They should be re-evaluated:
+- TC-{X}: {explanation of why it seems implementation-based}
+  ⚡ ACTION: Re-derive Expected Result from requirements, not implementation
+
+{IF out-of-scope ratio > 40%:}
+⚠️ HIGH OUT-OF-SCOPE RATIO ({percent}%):
+More than 40% of test cases are outside the explicit requirements. Consider:
+- Are there undocumented requirements that should be formalized?
+- Should some out-of-scope test cases be deprioritized?
+- Should we go back to Phase 1 to gather more requirements?
+
+📋 Out-of-Scope Test Cases Justification Summary:
+| TC IDs | Justification Category | Justification |
+|---|---|---|
+| TC-15, TC-16, TC-17 | Security Best Practice | {shared justification} |
+| TC-22 | Industry Standard / RFC | {individual justification} |
+| TC-30, TC-31 | Defensive Testing | {shared justification} |
+
+✅ AUDIT RESULT: {PASS / PASS WITH WARNINGS / FAIL}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+#### Поведение след Audit:
+
+**Ако PASS (няма проблеми):**
+→ Показва Audit Report и преминава директно към представяне на тестовите случаи (Стъпка 2.4).
+
+**Ако PASS WITH WARNINGS (има предупреждения, но не критични):**
+→ Показва Audit Report с предупрежденията.
+→ Пита потребителя:
+```
+The audit found some warnings (see above). Would you like me to:
+1️⃣ Fix the warnings automatically and re-validate
+2️⃣ Proceed with the test cases as-is (I'll keep the warnings noted)
+3️⃣ Go back to Phase 1 to gather more requirements
+```
+
+**Ако FAIL (има непокрити изисквания или orphan test cases):**
+→ Показва Audit Report с проблемите.
+→ Автоматично коригира:
+  - Добавя тестови случаи за непокрити изисквания
+  - Добавя обосновки за orphan test cases или ги премахва
+  - Коригира Expected Results с несъответствия
+→ Повтаря валидацията след корекциите.
+→ Показва обновения Audit Report.
+
+---
+
+### Стъпка 2.4: Представяне на Test Cases
+
+След генериране на всички test cases и успешно преминаване на Requirements Alignment Audit:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -908,14 +1109,22 @@ Total: {total_count} test cases
   ♿ Accessibility: {accessibility_count}
   🔄 Cache/Encoding: {cache_count}
 
+Scope Distribution:
+  📋 IN-SCOPE (Requirement-Driven): {count} ({percent}%)
+  ⚠️ OUT-OF-SCOPE (Justified): {count} ({percent}%)
+
 Expected Result Coverage:
   📋 Based on business requirements: {count_with_BR} test cases
   ⚠️ Based on QA judgment (no BR): {count_without_BR} test cases
 
+🔍 Requirements Alignment Audit: {PASS / PASS WITH WARNINGS}
+  All {BR_count} business requirements are covered ✅
+
 You can copy the markdown and save it as:
 TestCases-{task-name}.md
 
-[MARKDOWN OUTPUT WITH ALL TEST CASES — including Expected Results and Requirement References]
+[MARKDOWN OUTPUT WITH ALL TEST CASES — including Expected Results, Requirement References, 
+Scope tags, and Out-of-Scope Justifications]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 What would you like to do?
@@ -928,7 +1137,7 @@ What would you like to do?
 
 ---
 
-### Стъпка 2.4: Обработка на "Add More Scenarios" (Опция 3)
+### Стъпка 2.5: Обработка на "Add More Scenarios" (Опция 3)
 
 Когато потребителят избере опция 3:
 
@@ -962,11 +1171,11 @@ I've analyzed the current coverage and believe we have comprehensive coverage fo
 Do you have specific scenarios you'd like to add? Describe them and I'll formalize them as test cases.
 ```
 
-След добавяне/отказ — върни се към менюто с 3 опции.
+След добавяне/отказ — **повтори Стъпка 2.3 (Requirements Alignment Audit)** с обновените тестови случаи, след което върни се към менюто с 3 опции.
 
 ---
 
-### Стъпка 2.5: Обработка на "Modify Test Cases" (Опция 2)
+### Стъпка 2.6: Обработка на "Modify Test Cases" (Опция 2)
 
 ```
 Tell me which test cases you'd like to modify and how. You can:
@@ -977,7 +1186,7 @@ Tell me which test cases you'd like to modify and how. You can:
 - Request changes to Expected Results or Requirement References
 ```
 
-След модификации — върни се към менюто с 3 опции.
+След модификации — **повтори Стъпка 2.3 (Requirements Alignment Audit)** с обновените тестови случаи, след което върни се към менюто с 3 опции.
 
 ---
 
@@ -1166,6 +1375,11 @@ What would you like to do?
 - Приоритет за всеки test case
 - Expected Result за всеки test case
 - Requirement Reference за всеки test case
+- Scope маркировка (IN-SCOPE или OUT-OF-SCOPE с обосновка) за всеки test case
+- Out-of-scope тестови случаи ВИНАГИ имат Justification (индивидуална или групова)
+- Requirements Alignment Audit е ЗАДЪЛЖИТЕЛЕН преди представяне на тестовите случаи
+- Audit-ът се повтаря след всяка модификация или добавяне на тестови случаи
+- Тестовите случаи се валидират спрямо ИЗИСКВАНИЯТА, а НЕ спрямо имплементацията
 - Включвай само секции, релевантни за типа задача
 
 ### Език
