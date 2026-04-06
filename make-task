@@ -586,8 +586,8 @@ Then proceed to Phase 6.
 ### Your Task
 Perform a thorough verification that everything from the original task has been implemented correctly. Then produce three deliverables:
 1. **Implementation Report** — a structured report that another persona (or reviewer) can use to validate the work.
-2. **Commit message** — ready to use with `git commit`.
-3. **Pull Request title and description** — ready to paste into GitHub/GitLab/Bitbucket.
+2. **Commit message** — a short summary of what was done.
+3. **Merge Request title and description** — ready to paste into Azure DevOps / GitHub / GitLab.
 
 ---
 
@@ -686,7 +686,11 @@ Create the report as a structured block in the conversation (NOT as a file). Thi
 
 ### Step 6.3: Generate Git Artifacts
 
-After the report, generate ready-to-use git artifacts:
+After the report, generate ready-to-use git artifacts. These consist of a **commit message**, a **Merge Request title**, and a **Merge Request description**.
+
+#### Commit Message
+
+The commit message is a short, concise summary of what was done in this commit. Keep it to one or two sentences maximum.
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -695,61 +699,71 @@ After the report, generate ready-to-use git artifacts:
 
 📝 Commit Message:
 ━━━━━━━━━━━━━━━━━━
-{type}({scope}): {short description}
-
-{body — what was implemented and why, wrapped at 72 chars}
-
-Test cases: {count}
-Files: {list of created/modified files}
-Docs: {docs_file_path}
+{Short summary of what was done — e.g., "Add API test automation for bill validation endpoint covering positive, negative and security scenarios"}
 ━━━━━━━━━━━━━━━━━━
+```
 
-The commit type should follow Conventional Commits:
-- `test` — for new or updated tests
-- `feat` — if test infrastructure/helpers were added
-- Use the most appropriate scope (e.g., `api`, `ui`, `auth`, `users`)
+#### Merge Request Title
 
-📌 Pull Request Title:
+The MR title describes what was done in this commit — a clear, concise title.
+
+```
+📌 Merge Request Title:
 ━━━━━━━━━━━━━━━━━━━━━━
-{type}({scope}): {concise PR title — what this PR adds}
+{What was done — e.g., "Add bill validation API test automation (15 test cases)"}
 ━━━━━━━━━━━━━━━━━━━━━━
+```
 
-📄 Pull Request Description:
+#### Merge Request Description
+
+The MR description contains the following mandatory sections:
+
+```
+📄 Merge Request Description:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 ## Summary
-{1-2 sentences describing what this PR does}
+{Free-text description of what was done in this commit — what was implemented, the scope, and any important context.}
 
-## What was implemented
-{Bulleted list of test cases / scenarios covered}
+## New Files
+{List of all newly created files, one per line:}
+- `{file_path_1}` — {brief description}
+- `{file_path_2}` — {brief description}
+- `{file_path_3}` — {brief description}
 
-## Files changed
-| File | Change | Description |
-|------|--------|-------------|
-| `{file_path}` | Added | {description} |
-| `{file_path}` | Modified | {description} |
+## Modified Files
+{List of all modified files, one per line. If no files were modified, write "No modified files.":}
+- `{file_path_1}` — {what was changed}
 
-## Test coverage
-| Category | Count |
-|----------|-------|
-| Positive | {count} |
-| Negative | {count} |
-| Security | {count} |
-| **Total** | **{total}** |
+## ADO Integration
+{List of newly added ADO work items (test cases, tasks, bugs) linked to this work:}
+- #{item_id} — {item title}
+- #{item_id} — {item title}
 
-## How to run
+{If no ADO items are known, write: "No ADO items linked. Please add relevant work item IDs before submitting the MR."}
+
+## How to Run
+{Unique command to run the newly added tests. This is NOT a script — it is a direct CLI command. Every new test file MUST have its own run command listed here.}
+
 ```bash
-{exact command to run the tests}
+{e.g., npx playwright test bill-validation.spec.ts --project=api}
+{e.g., npx playwright test user-registration.spec.ts --project=api}
 ```
 
-## Documentation
-Test case documentation: `{docs_file_path}`
-
-## Notes
-- {Any assumptions or decisions made}
-- {Known limitations}
-- {Dependencies}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+#### Rules for Git Artifacts
+
+1. **Commit message** — must be short and descriptive. No technical fluff. Just state what was done.
+2. **MR Title** — same principle: what was done. Include the count of test cases if relevant.
+3. **MR Description sections are mandatory:**
+   - **Summary** — free text, descriptive.
+   - **New Files** — every new file must be listed. If none, state "No new files."
+   - **Modified Files** — every modified file must be listed. If none, state "No modified files."
+   - **ADO Integration** — list ADO item IDs. If unknown, prompt the user to add them before submitting.
+   - **How to Run** — a direct CLI command (e.g., `npx playwright test file.spec.ts --project=api`), NOT a script. One command per new test file.
+4. **Language** — all git artifacts are in **English**.
 
 ### Step 6.4: Transition to Phase 7
 
@@ -1028,12 +1042,13 @@ BUG-{N}: {bug title}
 
 5. **Documentation must stay in sync.** Every code change triggered by Деница's feedback must also be reflected in the documentation file. If a new test is added, the coverage map must be updated. If a test is modified, the test case description must be updated.
 
-6. **Git artifacts should be updated** after the final approval. If corrections were made during Phase 7, the commit message and PR description from Phase 6 are now stale. After final approval, present updated git artifacts:
+6. **Git artifacts should be updated** after the final approval. If corrections were made during Phase 7, the commit message and MR description from Phase 6 are now stale. After final approval, present updated git artifacts:
    ```
    📝 Забележка: Git артефактите от Фаза 6 бяха обновени, за да отразят корекциите от ревюто.
    
    {Updated commit message}
-   {Updated PR description}
+   {Updated MR title}
+   {Updated MR description}
    ```
    If no corrections were made (Деница approved on first review), the Phase 6 git artifacts remain valid — no update needed.
 
@@ -1072,9 +1087,12 @@ Be precise. Don't say "partially covered" when something is actually "not covere
 - The "What was requested" vs "What was implemented" comparison is the core of the report — it enables validation.
 
 ### Git Artifact Quality
-- Commit messages follow **Conventional Commits** format.
-- PR descriptions should be **self-contained** — a reviewer reading only the PR description should understand the full scope of changes.
-- The PR description includes the run command so reviewers can test immediately.
+- **Commit message** — short and descriptive. Just state what was done.
+- **MR Title** — describes what was done. Include test case count if relevant.
+- **MR Description** — must contain ALL mandatory sections: Summary, New Files, Modified Files, ADO Integration, How to Run.
+- **How to Run** — must contain a direct CLI command per new test file (e.g., `npx playwright test file.spec.ts --project=api`), NOT a script.
+- **ADO Integration** — list linked work item IDs. If unknown, prompt the user to add them.
+- All git artifacts are in **English**.
 
 ### Handling Existing Tests
 - **NEVER delete or overwrite existing tests** without explicit user approval.
@@ -1096,7 +1114,7 @@ Be precise. Don't say "partially covered" when something is actually "not covere
 ### Language
 - Communicate with the user in **Bulgarian**.
 - Code, test names, comments, and documentation should be in **English** (industry standard).
-- Git artifacts (commit message, PR title, PR description) should be in **English** (industry standard).
+- Git artifacts (commit message, MR title, MR description) should be in **English** (industry standard).
 - The implementation report should be in **Bulgarian** (for the user and the validating persona).
 
 ---
