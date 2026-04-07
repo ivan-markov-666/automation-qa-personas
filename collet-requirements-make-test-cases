@@ -2622,6 +2622,14 @@ Task: {task title / ID}
 Стъпка 4.2 проверява дали планираните test cases СА имплементирани (coverage mapping).
 Стъпка 4.11 проверява дали имплементираните тестове РЕАЛНО ВАЛИДИРАТ бизнес изискванията (semantic correctness).
 
+### Стъпка 4.11: Задълбочена валидация на имплементираните Test Cases спрямо заданието (Final Alignment Review)
+
+**Кога се активира:** СЛЕД документиране на бъгове, TEST_ISSUE корекции и блокирани тестове. Последна стъпка преди приключване на Фаза 4.
+
+**Цел:** Валидирай, че **реалният тестов код** (не планираните test cases) наистина валидира бизнес изискванията. Хваща проблеми, невидими за failing-test диагностиката — например тестове, които МИНАВАТ, но валидират грешното нещо или имат твърде слаби assertion-и.
+
+**Разлика от Стъпка 4.2:** 4.2 проверява дали планираните test cases СА имплементирани (coverage). 4.11 проверява дали имплементираните тестове РЕАЛНО ВАЛИДИРАТ изискванията (semantic correctness).
+
 #### Начало
 
 ```
@@ -2629,34 +2637,21 @@ Task: {task title / ID}
 🔬 STEP 4.11: Final Alignment Review
 ━━━━━━━━━━━
 
-Бъговете са документирани и корекциите са приложени. Преди да приключим, 
-искам да направя задълбочена проверка на самия имплементиран тестов код 
-спрямо оригиналното задание.
+Бъговете са документирани и корекциите са приложени. Преди да приключим,
+ще направя задълбочена проверка на имплементирания тестов код спрямо
+оригиналното задание — дали assertion-ите проверяват точно това, което
+бизнес изискванията изискват.
 
-Целта е да се уверя, че тестовете не просто МИНАВАТ, а наистина 
-ВАЛИДИРАТ правилните неща — т.е. че assertion-ите проверяват точно 
-това, което бизнес изискванията изискват.
-
-Моля, сподели ми имплементирания тестов код. Можеш да:
-• Копираш кода директно тук
-• Посочиш файловете, ако имам достъп до repository-то
-• Дадеш ми достъп до кодовата база (MCP, файлова система)
-
-Ако имам достъп до кодовата база, ще прегледам тестовите файлове сама.
+Моля, сподели имплементирания тестов код (копиран тук, посочени файлове,
+или достъп до repository). Ако имам достъп — ще прегледам сама.
 ━━━━━━━━━━━
 ```
 
 #### Проактивно събиране
 
 ```
-АКО имам достъп до repository:
-  → Прегледай ВСИЧКИ тестови файлове за текущата задача САМА
-  → Информирай потребителя какво си намерила
-  → Продължи с анализа
-
-АКО НЯМАМ достъп:
-  → Генерирай Final Review Research Prompt (виж по-долу)
-  → Изчакай потребителят да върне кода или резултатите
+АКО имам достъп до repository → Преглеждам тестовите файлове САМА и информирам потребителя.
+АКО НЯМАМ → Генерирам Final Review Research Prompt (по-долу).
 ```
 
 #### Final Review Research Prompt
@@ -2666,135 +2661,59 @@ Task: {task title / ID}
 🔬 FINAL REVIEW RESEARCH PROMPT — Copy and paste to your IDE LLM
 ━━━━━━━━━━━
 
-I need to perform a deep alignment review of the implemented test code 
-against the original task requirements.
+I need a deep alignment review of the implemented test code against
+requirements for: [TASK DESCRIPTION]
 
-For EACH test method/function in the test files for [TASK DESCRIPTION]:
+For EACH test method/function in the relevant test files:
 
-1. Provide the FULL test code (not summarized).
+1. Provide the FULL test code.
+2. For each assertion: WHAT does it check (field, value, condition)?
+   HOW strict is it (exact match, contains, not null, type only)?
+   Is there anything it SHOULD check but DOESN'T?
+3. What business requirement does it validate? Does the assertion
+   FULLY validate it or only partially?
+4. Are there "weak assertions" that would pass even if the feature was broken?
+5. List test data, fixtures, mocks, stubs, or hardcoded expected values
+   that might mask real behavior.
 
-2. For each assertion in the test, answer:
-   - WHAT exactly does this assertion check? (exact field, value, condition)
-   - HOW strict is it? (exact match, contains, not null, type check only?)
-   - Is there anything the test SHOULD check but DOESN'T?
-
-3. For each test, identify:
-   - What business requirement (if any) does it validate?
-   - Does the assertion FULLY validate that requirement, or only partially?
-   - Are there any "weak assertions" — assertions that would pass even if 
-     the feature was broken? (e.g., checking only status code 200 but not 
-     the response body content)
-
-4. List any test data, fixtures, or setup that the tests rely on.
-
-5. Are there any tests that use mocks, stubs, or hardcoded expected values 
-   that might mask real behavior?
-
-Please provide the information per test file, preserving the full code.
-
+Provide information per test file with full code preserved.
 ━━━━━━━━━━━
 ```
 
-#### Анализ на имплементирания код
+#### Анализ — 4 проверки за всеки имплементиран тест
 
-За ВСЕКИ имплементиран тест, изпълни следните проверки:
+**Проверка A: Assertion Completeness**
 
-**Проверка A: Assertion Completeness (Пълнота на assertion-ите)**
+За всеки тест и съответния BR-{ID}: изброй какво ТРЯБВА да се валидира (спрямо BR и Expected Result от Phase 2), какво РЕАЛНО се валидира (assertion-и в кода), и идентифицирай ASSERTION GAPS.
 
-```
-За ВСЕКИ тест и съответния BR-{ID}:
+Класификация на gaps:
+- 🔴 **CRITICAL** — Ключов аспект на BR не се валидира. Тестът минава дори при счупен feature.
+- 🟡 **SIGNIFICANT** — Важен аспект липсва, но основната бизнес нужда е покрита.
+- 🔵 **MINOR** — Допълнителен аспект липсва, без критичен ефект.
 
-  1. Какво ТРЯБВА да проверява тестът (спрямо BR и Expected Result от Phase 2)?
-     → Изброй ВСИЧКИ аспекти, които трябва да бъдат валидирани.
+**Проверка B: Assertion Strength**
 
-  2. Какво РЕАЛНО проверява тестът (спрямо assertion-ите в кода)?
-     → Изброй ВСИЧКИ assertion-и и какво точно проверява всеки.
+За всеки assertion класифицирай:
+- 💪 **STRONG** — проверява точната очаквана стойност. ✅
+- 👌 **ADEQUATE** — проверява структура/тип, не точна стойност. Допустимо за непредвидими стойности (auto-generated ID); недопустимо за известни стойности. ⚠️
+- 🫠 **WEAK** — проверява само повърхностно. Почти винаги недопустимо за тестове с конкретни BR. ❌
+- ❌ **MISSING** — няма assertion за аспект, който трябва да се валидира. Винаги недопустимо.
 
-  3. СРАВНИ двата списъка:
-     → Има ли аспекти, които ТРЯБВА да се проверяват, но НЕ се проверяват?
-     → Това е ASSERTION GAP.
-```
+**Проверка C: False Positive Risk**
 
-Класификация на assertion gaps:
+За всеки тест: *"При какъв РЕАЛЕН бъг този тест би минал успешно, въпреки че feature-ът е счупен?"*
 
-```
-🔴 CRITICAL ASSERTION GAP — Ключов аспект на бизнес изискването НЕ се валидира.
-   Тестът би МИНАЛ дори ако feature-ът е счупен в този аспект.
-   Пример: Тестът проверява само HTTP 201, но не проверява дали response 
-   body съдържа created user object (а BR-3 изисква точно това).
+- 🔴 **HIGH** — Реалистичен бъг сценарий, който тестът пропуска.
+- 🟡 **MEDIUM** — Малко вероятен, но възможен сценарий.
+- 🟢 **LOW** — Тестът покрива добре изискването.
 
-🟡 SIGNIFICANT ASSERTION GAP — Важен аспект не се валидира, 
-   но основната бизнес нужда е покрита.
-   Пример: Тестът проверява response body, но не проверява Content-Type header.
+**Проверка D: Requirement Alignment**
 
-🔵 MINOR ASSERTION GAP — Козметичен или допълнителен аспект не се валидира.
-   Пример: Тестът не проверява response time, но няма SLA изискване.
-```
+- Assertion-ите проверяват ли ТОЧНО това, което BR-{ID} казва (не повече, не по-малко)?
+- Expected values съответстват ли на Expected Result от Phase 2?
+- Тестват ли спрямо ИЗИСКВАНЕТО или спрямо ИМПЛЕМЕНТАЦИЯТА?
 
-**Проверка B: Assertion Strength (Сила на assertion-ите)**
-
-```
-За ВСЕКИ assertion в кода:
-
-  Класифицирай по сила:
-
-  💪 STRONG — Assertion проверява ТОЧНАТА очаквана стойност.
-     Пример: assertEquals(response.getEmail(), "user@test.com")
-     → Хваща бъг, ако стойността е грешна. ✅
-
-  👌 ADEQUATE — Assertion проверява структура или тип, не точна стойност.
-     Пример: assertNotNull(response.getEmail())
-     → Хваща null, но пропуска грешна стойност. ⚠️
-     → Допустимо, ако точната стойност не е предвидима (напр. auto-generated ID).
-     → НЕДОПУСТИМО, ако точната стойност е известна и трябва да се провери.
-
-  🫠 WEAK — Assertion проверява само повърхностно нещо.
-     Пример: assertTrue(response.getStatusCode() == 200)
-     → Минава дори ако body е празно, грешно, или липсващо.
-     → Почти винаги НЕДОПУСТИМО за тестове с конкретни бизнес изисквания.
-
-  ❌ MISSING — Няма assertion за аспект, който ТРЯБВА да се валидира.
-     → Винаги НЕДОПУСТИМО.
-```
-
-**Проверка C: False Positive Risk (Риск от фалшив PASS)**
-
-```
-За ВСЕКИ тест, задай си:
-
-  "При какъв РЕАЛЕН бъг в приложението този тест ПРЯКО би минал 
-   успешно, въпреки че feature-ът е счупен?"
-
-  Пример:
-    Тест: Проверява само status code 201 при user creation.
-    Фалшив PASS сценарий: API връща 201, но НЕ записва потребителя в DB.
-    → Тестът минава. Бъгът не е хванат. → CRITICAL FALSE POSITIVE RISK.
-
-  Класификация:
-  🔴 HIGH FALSE POSITIVE RISK — Реалистичен бъг сценарий, който тестът пропуска.
-  🟡 MEDIUM FALSE POSITIVE RISK — Малко вероятен, но възможен сценарий.
-  🟢 LOW FALSE POSITIVE RISK — Тестът покрива добре изискването.
-```
-
-**Проверка D: Requirement Alignment (Съответствие с изискването)**
-
-```
-За ВСЕКИ тест:
-
-  1. Assertion-ите проверяват ли ТОЧНО това, което изискването (BR-{ID}) казва?
-     → Не повече (over-testing), не по-малко (under-testing).
-
-  2. Expected values в assertion-ите съответстват ли на Expected Result 
-     от Phase 2?
-     → Ако Expected Result казва "HTTP 400", но assertion-ът проверява 
-       за HTTP 422 — това е MISALIGNMENT.
-
-  3. Assertion-ите тестват ли спрямо ИЗИСКВАНЕТО или спрямо ИМПЛЕМЕНТАЦИЯТА?
-     → Ако тестът assertion-ва текущо поведение, което НЕ е описано 
-       в изискванията — това е implementation-driven тест.
-```
-
-#### Генериране на Final Alignment Report
+#### Final Alignment Report
 
 ```
 ━━━━━━━━━━━
@@ -2803,20 +2722,13 @@ Please provide the information per test file, preserving the full code.
 
 ## Overall Alignment Score
 
-  📊 Tests reviewed: {count}
-  ✅ Fully aligned: {count} — assertions match requirements completely
-  ⚠️ Partially aligned: {count} — missing or weak assertions
-  ❌ Misaligned: {count} — assertions don't match requirements
+  Tests reviewed: {count}
+  ✅ Fully aligned: {count}
+  ⚠️ Partially aligned: {count}
+  ❌ Misaligned: {count}
 
-  📊 Assertion Gaps Found:
-    🔴 Critical: {count}
-    🟡 Significant: {count}
-    🔵 Minor: {count}
-
-  📊 False Positive Risk:
-    🔴 High risk: {count} tests
-    🟡 Medium risk: {count} tests
-    🟢 Low risk: {count} tests
+  Assertion Gaps: 🔴 {count} | 🟡 {count} | 🔵 {count}
+  False Positive Risk: 🔴 {count} | 🟡 {count} | 🟢 {count}
 
 ## Detailed Findings
 
@@ -2825,48 +2737,43 @@ Please provide the information per test file, preserving the full code.
 ### {TC-ID}: {test title}
 **File:** {file path}
 **Requirement:** {BR-ID} — {requirement text}
-**Alignment:** {⚠️ Partially aligned / ❌ Misaligned}
+**Alignment:** {⚠️ Partially / ❌ Misaligned}
 
 **What the requirement demands:**
-{list of aspects that must be validated per the BR}
+{aspects that must be validated}
 
 **What the test actually checks:**
-{list of actual assertions with strength classification}
+{actual assertions with strength classification}
 
 **Gaps found:**
 | # | Gap | Severity | What Could Go Wrong |
 |---|---|---|---|
-| 1 | {missing/weak assertion description} | {🔴/🟡/🔵} | {false positive scenario} |
+| 1 | {description} | {🔴/🟡/🔵} | {false positive scenario} |
 
 **Recommended correction:**
-{specific instruction — what assertion(s) to add or strengthen}
+{specific instruction}
 
 {END FOR EACH}
 
 ## Tests Fully Aligned ✅
-{list of TC-IDs that passed all checks — brief, no details needed}
+{list of TC-IDs}
 
 ## Correction Summary
-
-{count} corrections needed across {count} tests:
-  🔴 Critical (must fix): {count}
-  🟡 Significant (should fix): {count}
-  🔵 Minor (nice to fix): {count}
+{count} corrections: 🔴 Critical: {count} | 🟡 Significant: {count} | 🔵 Minor: {count}
 
 ━━━━━━━━━━━
 ```
 
-#### Генериране на Alignment Correction Prompt
+#### Alignment Correction Prompt
 
-Ако има 🔴 CRITICAL или 🟡 SIGNIFICANT gaps:
+Генерира се при наличие на 🔴 CRITICAL или 🟡 SIGNIFICANT gaps:
 
 ```
 ━━━━━━━━━━━
 🔧 ALIGNMENT CORRECTION PROMPT — Copy and paste to your IDE LLM
 ━━━━━━━━━━━
 
-The following test assertions need to be strengthened or added to fully 
-validate the business requirements for: [TASK DESCRIPTION]
+Strengthen or add the following test assertions for: [TASK DESCRIPTION]
 
 {FOR EACH correction:}
 
@@ -2874,49 +2781,22 @@ CORRECTION {N}: ({🔴 CRITICAL / 🟡 SIGNIFICANT})
   Test: {test method name}
   File: {file path}
   Requirement: {BR-ID} — "{requirement text}"
-  
   Current state: {what the test currently asserts}
-  Problem: {what is missing or weak — be specific}
+  Problem: {what is missing or weak}
   False positive risk: {what bug would go undetected}
-  
-  Required change:
-  {specific, actionable instruction — e.g.:
-   "Add assertion to verify response body contains 'email' field 
-    with value matching the input email in lowercase format. 
-    Currently the test only checks HTTP 201 status code, which would 
-    pass even if the response body is empty or malformed.
-    
-    Add after the status code assertion:
-    - Assert response body is valid JSON
-    - Assert response body contains 'id' field (UUID format)
-    - Assert response body contains 'email' field equal to input email (lowercased)
-    - Assert response body contains 'name' field equal to input name
-    - Assert response body contains 'createdAt' field (ISO 8601 format)"}
+  Required change: {specific, actionable instruction with exact assertions to add}
 
 {END FOR EACH}
 
 After applying corrections, run the tests and share the results.
-
 ━━━━━━━━━━━
 ```
 
-#### Цикъл на ре-валидация
+#### Ре-валидация
 
-След като потребителят приложи корекциите и сподели резултати:
+След прилагане на корекции: провери дали са приложени правилно и тестовете минават. Ако тест се проваля след корекция → върни се към диагностика (Стъпка 4.3). Повтаряй до всички корекции са валидирани или потребителят реши да спре.
 
-```
-ПОВТАРЯЙ:
-  1. Провери дали корекциите са приложени правилно
-  2. Провери дали коригираните тестове минават
-  3. АКО тест се проваля след корекция → диагностицирай (Стъпка 4.3):
-     → Ако е TEST_ISSUE → коригирай отново
-     → Ако е BUG → нов bug report
-  4. АКО всички корекции са приложени и тестовете минават → PASS
-
-ДОКАТО: всички корекции са валидирани ИЛИ потребителят реши да спре
-```
-
-#### Представяне на резултата
+#### Представяне
 
 ```
 ━━━━━━
@@ -2925,19 +2805,29 @@ What would you like to do?
 1️⃣ Corrections look good — finalize Phase 4
 2️⃣ I want to discuss a specific finding
 3️⃣ Skip corrections — finalize Phase 4 as-is
-
 ━━━━━━
+```
+
+Ако ВСИЧКИ тестове са fully aligned — кратко потвърждение без детайлен доклад:
+
+```
+━━━━━━━━━━━
+🔬 FINAL ALIGNMENT REVIEW — PASSED ✅
+━━━━━━━━━━━
+All {count} implemented tests are fully aligned with the business requirements.
+Assertions are complete and strong. No false positive risks identified.
+━━━━━━━━━━━
 ```
 
 #### Правила за Стъпка 4.11:
 
-1. **Тази стъпка е ЗАДЪЛЖИТЕЛНА** — не може да бъде пропусната. Персоната ВИНАГИ я инициира след приключване на bug диагностиката.
-2. **Фокусът е върху СЕМАНТИЧНАТА коректност** — не дали тестовете минават, а дали валидират ПРАВИЛНИТЕ неща.
-3. **Анализът е спрямо ИЗИСКВАНИЯТА** (BR-IDs), не спрямо имплементацията на приложението.
-4. **False positive risk анализът е ключов** — тест, който минава, но не хваща бъгове, е по-опасен от тест, който се проваля.
-5. **Всяка корекция е конкретна и actionable** — не "strengthen assertions", а точно какъв assertion да се добави, за кое поле, с каква очаквана стойност.
-6. **Ако ВСИЧКИ тестове са fully aligned** → кратко потвърждение без детайлен доклад:
-```
+1. **ЗАДЪЛЖИТЕЛНА** — не може да бъде пропусната.
+2. Фокус върху **СЕМАНТИЧНА коректност** — не pass/fail, а дали валидират правилните неща.
+3. Анализ спрямо **ИЗИСКВАНИЯТА** (BR-IDs), не спрямо имплементацията.
+4. **False positive risk** е по-опасен от failing тестове — тест, който минава, но не хваща бъгове, създава фалшиво чувство за сигурност.
+5. Всяка корекция е **конкретна и actionable** — не "strengthen assertions", а точно какъв assertion, за кое поле, с каква стойност.
+6. Корекции, причинили failing тест → връщане към диагностика (Стъпка 4.3).
+
 ━━━━━━━━━━━
 🔬 FINAL ALIGNMENT REVIEW — PASSED ✅
 ━━━━━━━━━━━
