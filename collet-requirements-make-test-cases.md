@@ -69,6 +69,7 @@
 • Тестови данни (JSON body, test accounts, примерни входни данни)
 • Очаквани резултати (status codes, response body, UI поведение)
 • Бизнес изисквания или документация
+• Тест план / тест стратегия (ако има налична за проекта или задачата)
 • Среда за тестване (staging URL, credentials info, browser requirements)
 • Специфични ограничения или бележки
 
@@ -291,6 +292,7 @@ Would you still like to proceed? (Type "1" again to confirm, or provide the miss
 - [ ] Детайли за позитивния сценарий (happy path)
 - [ ] Очаквани резултати за позитивния сценарий
 - [ ] Бизнес изисквания или acceptance criteria
+- [ ] **Тест план / тест стратегия** (ако има такава за проекта или задачата)
 - [ ] Детайли за тестовата среда
 - [ ] Детайли за authentication / authorization
 - [ ] Тестови данни
@@ -1738,17 +1740,21 @@ After creating files, list all paths.
 
 Попитай потребителя ако не е уточнено: *"Azure DevOps, Jira, GitHub Issues, или друга система? Ще адаптирам формата."*
 
-### Стъпка 4.8: PBI Comment Text
+### Стъпка 4.8: Communication Artifacts (PBI Comment, Commit, PR, Teams)
 
-**Правила:**
-1. Кратък — побира се в един скрол.
-2. Точен — конкретно и верифицируемо.
-3. Ясен — четим без допълнителен контекст.
-4. Без шум — без увод/заключения.
-5. Проблемите в свободен текст, не bullet списъци.
-6. На английски.
+**Общи правила (валидни за ВСИЧКИ 5 артефакта):**
+1. На английски, кратки, без увод/заключения.
+2. Конкретни и верифицируеми — без общи фрази.
+3. Споделена Status логика (виж по-долу) — изчислява се ВЕДНЪЖ, ползва се навсякъде.
+4. Reference към BUG-{N} / BR-{ID} вместо повторение на детайли.
+5. Никакво "AI-generated" звучене — пиши както го пише инженер.
 
-**Структура:**
+**Shared Status (изчислява се веднъж, ползва се от всички артефакти):**
+- ✅ ALL PASSING — всички тестове минават, няма бъгове, няма блокирани
+- ⚠️ PASSING WITH ISSUES — мнозинството минава + блокирани и/или Medium/Low бъгове
+- ❌ HAS FAILURES — Critical/High бъгове или значителен брой failing тестове
+
+**Структура (генерирай и 5-те артефакта последователно):**
 
 ```markdown
 ━━━━━━━━━━━
@@ -1776,12 +1782,55 @@ No blocked tests. {IF deviations: count + brief reason}
 **Deviations from plan:** {count} accepted. {Brief reason}
 
 ━━━━━━━━━━━
-```
+📦 COMMIT MESSAGE (copy-paste ready)
+━━━━━━━━━━━
 
-**Статус правила:**
-- ✅ ALL PASSING — всички тестове минават, няма бъгове, няма блокирани
-- ⚠️ PASSING WITH ISSUES — мнозинството минава + блокирани и/или Medium/Low бъгове
-- ❌ HAS FAILURES — Critical/High бъгове или значителен брой failing тестове
+test({scope}): {imperative summary in ≤72 chars}
+
+Covers {N} test cases for {PBI-ID}. Status: {shared status}.
+{IF bugs: Bugs: BUG-{N}, BUG-{N}.}
+{IF blocked: Blocked: {count} (see PBI comment).}
+
+Refs: {PBI-ID}
+
+━━━━━━━━━━━
+🔀 PR TITLE (copy-paste ready)
+━━━━━━━━━━━
+
+test({scope}): {what was added} [{PBI-ID}]
+
+━━━━━━━━━━━
+📝 PR DESCRIPTION (copy-paste ready)
+━━━━━━━━━━━
+
+## What
+{1-2 sentences: what tests were added/edited and for which PBI.}
+
+## Status
+{shared status} — {passing}/{total} passing, {blocked} blocked, {bugs} bugs.
+
+## Bugs Found
+{IF bugs: list BUG-{N} — {title} ({severity}). ELSE: None.}
+
+## Blocked Tests
+{IF blocked: list with WHAT/WHO (1 line each). ELSE: None.}
+
+## How to Verify
+- Run: {test command}
+- Expected: {what reviewer should see}
+
+Refs: {PBI-ID}
+
+━━━━━━━━━━━
+💬 TEAMS MESSAGE (copy-paste ready)
+━━━━━━━━━━━
+
+{status emoji} Test automation for {PBI-ID} ready for review.
+{passing}/{total} passing{IF bugs: , {count} bugs found (BUG-{N}...)}{IF blocked: , {count} blocked}.
+PR: {PR link placeholder} | PBI: {PBI link placeholder}
+
+━━━━━━━━━━━
+```
 
 ### Стъпка 4.9: Финален резултат
 
@@ -1796,6 +1845,9 @@ No blocked tests. {IF deviations: count + brief reason}
 
 📋 Generated Artifacts:
   {✅/—} PBI Comment
+  {✅/—} Commit Message
+  {✅/—} PR Title & Description
+  {✅/—} Teams Message
   {✅/—} Bug Reports ({N})
   {✅/—} Bug Report Generation Prompt
 
@@ -1809,7 +1861,7 @@ No blocked tests. {IF deviations: count + brief reason}
 
 ━━━━━━
 1️⃣ Everything looks good — proceed to Final Alignment Review (Step 4.11)
-2️⃣ Edit PBI comment
+2️⃣ Edit communication artifacts (PBI / commit / PR / Teams)
 3️⃣ Edit a bug report
 4️⃣ Re-run diagnosis for a specific test
 5️⃣ Generate detailed Validation Report (optional)
@@ -2036,6 +2088,7 @@ Thank you! Ако blocked items се отблокират или бъгове б
 - Документирай ВСИЧКИ източници.
 - Идентифицирай и класифицирай пропуски (🔴/🟡/🟢).
 - Не позволявай преминаване при 🔴 BLOCKING без потвърждение.
+- Ако има наличен тест план / тест стратегия за проекта или задачата — поискай го; той дава контекст за scope, стандарти и подход.
 
 ### Имплементацията е контекст, не спецификация
 - Test cases се строят спрямо ИЗИСКВАНИЯТА.
@@ -2076,6 +2129,7 @@ Thank you! Ако blocked items се отблокират или бъгове б
 - BUG report-и: steps, expected (от BR), actual, evidence, QA assessment, impact.
 - Bug Report Generation Prompt — ЕДИН за всички бъгове.
 - PBI коментар — кратък, свободен текст, без повторения на bug report-ите.
+- Communication artifacts (4.8) — генерират се АВТОМАТИЧНО и 5-те (PBI, commit, PR title, PR description, Teams). Споделят една Status логика; никога не повтаряй детайли — референцирай BUG-{N}/BR-{ID}.
 - Не правиш предположения за имплементацията.
 - Стъпка 4.11 (Final Alignment Review) е ЗАДЪЛЖИТЕЛНА.
 - Фокус: семантична коректност на assertion-ите, не pass/fail.
