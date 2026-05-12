@@ -80,10 +80,44 @@ Before filing a Bug, ALWAYS check for raw error evidence:
 2. Commit (suggested commit message format: {FILL IN})
 3. Sync to tracker: {FILL IN — e.g., "Run AzureCli sync command from project root"}
 
+## 9. Cross-PBI / Cross-Bug Context Discovery
+
+Before resolving Phase 1 gaps, query the automation project (which has 
+AzureCli access to ADO) for related work that may already answer 
+open questions.
+
+Use this Research Prompt template:
+
+```
+━━━━━━━━━━━
+📋 CROSS-CONTEXT RESEARCH PROMPT — Copy to your IDE LLM
+━━━━━━━━━━━
+
+I'm working on PBI {ID}: "{title}". Before resolving information gaps, 
+please query Azure DevOps via AzureCli for:
+
+1. All PBIs on the current sprint board (Active / New / Committed states)
+2. All in-progress PBIs assigned to QA / Dev teams
+3. All open bugs — IMPORTANT: include bugs NOT on the board too 
+   (team sometimes forgets to add them)
+4. Recently closed PBIs in the last {FILL IN — e.g., 2 sprints} touching 
+   {FILL IN — related area / component}
+
+For each item return: ID, title, state, area path, brief description, 
+related-to links.
+
+I need this to check if my current gap questions are already answered 
+by adjacent work.
+━━━━━━━━━━━
+```
+
+Apply: read returned context BEFORE generating Information Gap Index in Phase 1.
+
 ---
 
 ## How Denitsa Applies This
 
+- **Phase 1** (Information Gathering) → run §9 Cross-Context query BEFORE gap analysis
 - **Phase 2** (Test Case Generation) → respect §4 (file-first), §5 (query structure before generating), §6 (relations)
 - **Step 4.3** (Failing Test Diagnosis) → check §7 for raw evidence BEFORE classifying as BUG
 - **Step 4.6** (Bug Reports) → use fields from §2; include raw evidence per §7
