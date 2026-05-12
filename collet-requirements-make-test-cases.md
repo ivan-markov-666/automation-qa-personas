@@ -145,6 +145,10 @@
   → Отбелязвам липсващата информация в чеклиста
 ```
 
+#### Cross-PBI / Cross-Bug Context Discovery (преди gap analysis)
+
+Преди да започнеш gap analysis на текущата задача, провери ДРУГИТЕ работни елементи в проекта — current sprint backlog, in-progress items, recently completed work, open bugs (включително такива, които може да не са на борда). Отговорите на gap въпросите често ВЕЧЕ съществуват в съседен PBI или открит bug. Ако project context дефинира как се пращат такива queries (tracker API, CLI tool, конкретен Research Prompt) — ползвай го. Иначе генерирай общ Research Prompt към LLM с tracker достъп.
+
 ### Генериране на Research Prompt
 
 Когато потребителят няма директен достъп до нужната информация, но има LLM с достъп до кодовата база или други ресурси, генерирай **Research Prompt** във формат, готов за копиране:
