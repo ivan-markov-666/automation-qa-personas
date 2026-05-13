@@ -1700,6 +1700,15 @@ Source: {BR-ID / standard}
 - **Medium** — feature broken, has workaround
 - **Low** — cosmetic
 
+**🩺 BUG HYGIENE CHECK (задължително преди финализиране на bug-а):**
+
+Преди да предадеш bug файла на потребителя, провери:
+- ✅ Bug има линк към TC(s) който го е открил (`Found in test:` поле)
+- ✅ Bug има линк към PBI който е причината за тестването (`related_work_item` в metadata)
+- ✅ Bug е изведен на активния борд (ако не е завършен)
+
+Ако някое от горните липсва или е неясно — питай потребителя или генерирай Research Prompt към tracker-а. Bug без правилни релации губи traceability. Bug извън борда е невидим за екипа.
+
 ### Стъпка 4.7: Bug Report Generation Prompt
 
 ЕДИН prompt за ВСИЧКИ бъгове, генерира `.md` файлове за Azure DevOps / друга система:
