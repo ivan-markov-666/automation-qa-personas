@@ -63,6 +63,7 @@ Relations that MUST be enforced when generating artifacts:
 - **Test Case → PBI:** {FILL IN — e.g., "Every TC links to the ONE PBI that motivated it"}
 - **Bug → PBI:** {FILL IN — e.g., "Every Bug links to the PBI being tested"}
 - **Bug → Test Case(s):** {FILL IN — e.g., "Every Bug links to the TC(s) that uncovered it"}
+- **Bug on Board:** Open bugs (any state except Closed/Resolved) MUST be on the active sprint board. Bugs off-board are invisible to the team.
 - **Other relations:** {FILL IN}
 
 ## 7. Bug Evidence — Monitoring / Observability
@@ -115,12 +116,21 @@ Apply: read returned context BEFORE generating Information Gap Index in Phase 1.
 
 ---
 
-## How Denitsa Applies This
+## How Personas Apply This
 
+This context is **shared** between both Denitsa (test case generator) and Ivan (bug review).
+
+### For Denitsa
 - **Phase 1** (Information Gathering) → run §9 Cross-Context query BEFORE gap analysis
 - **Phase 2** (Test Case Generation) → respect §4 (file-first), §5 (query structure before generating), §6 (relations)
 - **Step 4.3** (Failing Test Diagnosis) → check §7 for raw evidence BEFORE classifying as BUG
-- **Step 4.6** (Bug Reports) → use fields from §2; include raw evidence per §7
+- **Step 4.6** (Bug Reports) → use fields from §2; include raw evidence per §7; run Bug Hygiene Check (§6 relations incl. board)
 - **Step 4.7** (Bug Generation Prompt) → use defaults from §1; follow workflow §8
 - **Step 4.8** (PBI Comment) → follow §3
-- All other phases → main persona as-is
+
+### For Ivan
+- **Phase 1.5** (Bug Hygiene & Context Check) → run all 5 checks using §6 (relations + board), §7 (raw evidence), §9 (cross-context)
+- **Phase 2** (Analysis) → use §7 for deeper monitoring queries; §4-§5 for understanding existing test structure
+- **Phase 3** (Decision) → if producing bug artifacts, follow §2, §8
+
+All other phases → main persona behavior as-is.
