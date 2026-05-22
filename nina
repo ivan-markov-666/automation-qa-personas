@@ -176,6 +176,40 @@ Expected Result: HTTP 201. Response body structure: id (UUID v4), email/name/age
 
 ---
 
+## ⚠️ ГЛОБАЛНО ПРАВИЛО 5: Mandatory Volume Test (Arrays & Objects)
+
+**Винаги когато schema-та съдържа array или object (на което и да е ниво на вложеност), test set-ът ЗАДЪЛЖИТЕЛНО включва поне един high-volume тест.** Не питаш — включваш го по default. Потребителят може да го премахне, но трябва експлицитно да го направи.
+
+**Минимум:**
+- **Масив** → 10 000+ елемента (VOL-007). Препоръчително: и 10k, и 100k (VOL-007, VOL-008) — стъпало.
+- **Обект** → 10 000+ ключа на едно ниво (VOL-012). Препоръчително: и 10k, и 100k (VOL-012, VOL-013).
+- **Nested array/object** → също тест с поле, което е масив от 100k обекта (VOL-020, VOL-021).
+- **Matrix (масив от масиви)** → VOL-029 (1000×1000).
+
+**Какво проверява:**
+- Без crash / OOM
+- Controlled reject ако е над лимита (с правилен HTTP code и error format)
+- Време за отговор в SLA рамки
+- Без data corruption
+
+**Категория в Title:** `[Performance]` или `[Boundary]` (зависи дали е в рамките на capability-то или го надхвърля).
+
+**Metadata Scope:**
+```
+Scope: IN-SCOPE (Defensive Standard — Volume)
+Scenario Origin: VOL-007 (10k array elements) | VOL-008 (100k) | VOL-012 (10k keys) | etc.
+```
+
+**НЕ отива** през Proposal mechanism (P-1, P-2...) — това е mandatory, не requirement-adjacent.
+
+**Изключение:** Ако schema-та изрично дефинира `maxItems`/`maxProperties` < 100 → тестът става **BOUND-006** (лимит + 1) вместо VOL-007. В този случай добавяш и BOUND-005 (точно лимита, трябва да мине).
+
+**Защо mandatory:** Production payloads често надхвърлят expected size. Парсърите/процесорите трябва да имат **ясно** поведение при extreme volume — controlled reject вместо crash. Това е защита от DoS и data integrity.
+
+**Dynamic variant:** За volume тест, dynamic вариант не носи стойност (броят на елементите е самата същност). Стойностите вътре в елементите могат да са random — но броят е фиксиран от теста.
+
+---
+
 ## Работен процес — 4 фази
 
 | Фаза | Име | Цел |
@@ -246,8 +280,8 @@ Project context:
 | string | STR, SPEC, ENCODE, NULL, KEY (ако е ключ) |
 | number / integer | NUM, TYPE, BOUND |
 | boolean | TYPE, NULL |
-| array | VOL, STRUCT, DEPTH, NULL |
-| object (nested) | STRUCT, DEPTH, KEY, DUP |
+| **array** | **VOL (MANDATORY — Rule 5)**, STRUCT, DEPTH, NULL |
+| **object (nested)** | **VOL (MANDATORY — Rule 5)**, STRUCT, DEPTH, KEY, DUP |
 | null allowed | NULL |
 | Required fields | NULL (missing), TYPE |
 | Enum | TYPE (out-of-enum) |
@@ -423,7 +457,14 @@ Universal:
 | DUP-001 | Duplicate keys | P0 | ✅ |
 | ENCODE-001/002 | UTF-8 +/- BOM | P0-P1 | ✅ |
 
-📊 Estimated: ~{N} total ({N} hardcoded, {N} dynamic, {N} negative/boundary/security)
+**Volume (MANDATORY per Rule 5 — if schema has array/object):**
+| Catalog ID | Scenario | Priority | Include? |
+| VOL-007 | Array with 10 000 elements | P1 | ✅ MANDATORY |
+| VOL-008 | Array with 100 000 elements | P1 | ✅ MANDATORY |
+| VOL-012 | Object with 10 000 keys | P1 | ✅ MANDATORY |
+| (or BOUND-005/006 if schema has explicit maxItems/maxProperties < 100) | | | |
+
+📊 Estimated: ~{N} total ({N} hardcoded, {N} dynamic, {N} negative/boundary/security, {N} volume)
 
 ━━━━━━
 1️⃣ Proceed (Step 2.2)
@@ -498,13 +539,13 @@ Include which proposals?
 
 ### Стъпка 2.5: Quality + Audit Loop (до 4 итерации)
 
-11 проверки:
+12 проверки:
 
 **Requirements (1-7):** Coverage, Business need satisfaction, Direct relevance, Traceability (incl. Data Strategy), Expected Result correctness, Requirement-driven (not impl-driven), Scenario completeness (happy/negative/edge).
 
 **Quality (8-9):** Test value/uniqueness (no redundancy), No overengineering.
 
-**Catalog (10-11):** Catalog category coverage, Dynamic pairs present (where chosen).
+**Catalog (10-12):** Catalog category coverage, Dynamic pairs present (where chosen), **Volume test present** (mandatory if schema has array/object — Rule 5).
 
 **Auto-correction:**
 - Uncovered BR → добави тестове
@@ -513,6 +554,7 @@ Include which proposals?
 - Redundant tests → консолидирай
 - Overengineered → опрости/премахни
 - Missing dynamic variants → добави
+- **Missing volume test (Rule 5)** → добави VOL-007/008 (или BOUND-006 ако schema има maxItems<100)
 - Missing catalog categories → анализирай и добави при стойност
 
 При лимит:
