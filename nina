@@ -210,6 +210,24 @@ Scenario Origin: VOL-007 (10k array elements) | VOL-008 (100k) | VOL-012 (10k ke
 
 ---
 
+## ⚠️ ГЛОБАЛНО ПРАВИЛО 6: Anti-Pattern "Fix tests to pass" — ЗАБРАНЕНО
+
+**Никога не казвай на Automation LLM-а "оправи тестовете да минават".** Нито в Phase 3 IDE LLM Prompts, нито в Phase 4 Correction Prompts. Тестовете отразяват **бизнес изискванията**, не имплементационното поведение.
+
+**Правило:**
+- Тест fail-ва заради **проблем В теста** (грешен assertion, payload, endpoint, setup, framework bug) → редактирай теста.
+- Тест fail-ва заради **бъг в приложението** → НЕ модифицирай теста. Документирай като bug (Phase 4.6).
+
+**В Phase 3 IDE LLM Prompts** — задължително включи в края на guidelines секцията:
+> "If during implementation any test appears to require the SUT to behave incorrectly to pass, STOP. The test reflects business requirements (BR-{X}) — the implementation must conform to it, not the other way around. Report the discrepancy instead of modifying the test."
+
+**В Phase 4 Correction Prompts** — задължително включи преди списъка с корекции:
+> "These corrections are for TEST_ISSUE cases only — issues IN the test code (wrong assertion target, wrong payload, wrong endpoint, setup mistake). If you find that 'fixing' a test would require changing what it asserts about business behavior, STOP — that's a bug, not a test issue. Report it back."
+
+**Self-check** при писане на correction prompt: "Дали моите инструкции могат да бъдат интерпретирани като 'промени assertion-а да съвпадне с actual'?" Ако ДА → пренапиши да са по-конкретни (точно какво е грешно В теста, не "fix").
+
+---
+
 ## Работен процес — 4 фази
 
 | Фаза | Име | Цел |
@@ -744,6 +762,9 @@ Generating {N} prompt(s).
 - For DYNAMIC — input/output equality + structure
 - NEVER weak ("not null") for BR-tied tests
 
+### ⚠️ Critical: Tests Reflect Requirements, Not Implementation
+If during implementation any test appears to require the SUT to behave incorrectly to pass, STOP. The test reflects business requirements — the implementation must conform to it, not vice versa. Report the discrepancy; do NOT modify the test to make it pass.
+
 ## 7. Expected Behavior Summary
 [Per test category]
 
@@ -874,7 +895,12 @@ Coverage Mapping, Expected Result Alignment, BR Satisfaction.
 🔧 TEST CORRECTION PROMPT {N} of {TOTAL} — PROJECT: Automation
 ━━━━━━━━━━━
 
-For [TASK], apply corrections:
+For [TASK], apply corrections.
+
+⚠️ SCOPE: These corrections are for TEST_ISSUE cases only — problems IN the test code 
+(wrong assertion target, wrong payload, wrong endpoint, setup mistake). If you find that 
+"fixing" a test would require changing what it asserts about business behavior to match 
+the actual response, STOP — that's a bug, not a test issue. Report it back instead.
 
 CORRECTION {N}:
   Test: {method name}
@@ -882,8 +908,8 @@ CORRECTION {N}:
   Current: {what does now}
   Problem: {what's wrong}
   Root cause: {why}
-  Required change: {actionable}
-  Expected after fix: {test should PASS because...}
+  Required change: {actionable — specific code change, not "make it pass"}
+  Expected after fix: {test should PASS because the corrected test now properly checks BR-{X}}
   BR: {BR-ID — text}
 ━━━━━━━━━━━
 
